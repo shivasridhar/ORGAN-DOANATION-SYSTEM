@@ -1,65 +1,76 @@
 import React, { useState } from 'react';
-import { Users, Activity, Filter, Heart } from 'lucide-react';
+import { Users, Activity, Filter, Heart, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Card from '../components/Card';
-import SearchFilters from '../components/SearchFilters';
-import DonorRow from '../components/DonorRow';
+import DonorLogCard from '../components/DonorLogCard';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
+import Input from '../components/Input';
+import Select from '../components/Select';
 
 const HospitalDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, donors, deleteDonor } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOrgan, setFilterOrgan] = useState('all');
   const [filterBlood, setFilterBlood] = useState('all');
-  const [sortBy, setSortBy] = useState('date');
-  const [selectedDonor, setSelectedDonor] = useState(null);
-
-  const donors = [
-    { id: 1, name: 'John Smith', bloodType: 'A+', organ: 'Kidney', location: 'New York', status: 'Available', matchScore: 95 },
-    { id: 2, name: 'Sarah Johnson', bloodType: 'O-', organ: 'Liver', location: 'California', status: 'Available', matchScore: 88 },
-    { id: 3, name: 'Michael Brown', bloodType: 'B+', organ: 'Heart', location: 'Texas', status: 'Available', matchScore: 92 },
-    { id: 4, name: 'Emily Davis', bloodType: 'AB+', organ: 'Lung', location: 'Florida', status: 'Available', matchScore: 85 },
-  ];
+  const [editingDonor, setEditingDonor] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   const filteredDonors = donors
-    .filter(d => filterOrgan === 'all' || d.organ.toLowerCase() === filterOrgan)
+    .filter(d => filterOrgan === 'all' || d.organ.toLowerCase() === filterOrgan.toLowerCase())
     .filter(d => filterBlood === 'all' || d.bloodType === filterBlood)
-    .filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .sort((a, b) => sortBy === 'match' ? b.matchScore - a.matchScore : 0);
+    .filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const filterConfig = [
-    {
-      name: 'organ',
-      value: filterOrgan,
-      options: [
-        { value: 'all', label: 'All Organs' },
-        { value: 'kidney', label: 'Kidney' },
-        { value: 'liver', label: 'Liver' },
-        { value: 'heart', label: 'Heart' },
-        { value: 'lung', label: 'Lung' }
-      ]
-    },
-    {
-      name: 'blood',
-      value: filterBlood,
-      options: [
-        { value: 'all', label: 'All Blood Types' },
-        { value: 'A+', label: 'A+' },
-        { value: 'A-', label: 'A-' },
-        { value: 'B+', label: 'B+' },
-        { value: 'O-', label: 'O-' }
-      ]
+  const handleEdit = (donor) => {
+    setEditingDonor(donor);
+    setEditFormData({
+      name: donor.name,
+      address: donor.address,
+      organ: donor.organ,
+      age: donor.age,
+      hospital: donor.hospital,
+      bloodType: donor.bloodType,
+      phone: donor.phone
+    });
+  };
+
+  const handleSaveEdit = () => {
+    // In a real app, you'd update the donor in the database
+    // For now, we'll just close the modal
+    setEditingDonor(null);
+    setEditFormData({});
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm('Are you sure you want to delete this donor?')) {
+      deleteDonor(id);
     }
+  };
+
+  const organOptions = [
+    { value: 'all', label: 'All Organs' },
+    { value: 'kidney', label: 'Kidney' },
+    { value: 'liver', label: 'Liver' },
+    { value: 'heart', label: 'Heart' },
+    { value: 'lung', label: 'Lung' },
+    { value: 'pancreas', label: 'Pancreas' },
+    { value: 'small bowel', label: 'Small Bowel' }
   ];
 
-  const handleFilterChange = (name, value) => {
-    if (name === 'organ') setFilterOrgan(value);
-    if (name === 'blood') setFilterBlood(value);
-  };
+  const bloodTypeOptions = [
+    { value: 'all', label: 'All Blood Types' },
+    { value: 'A+', label: 'A+' },
+    { value: 'A-', label: 'A-' },
+    { value: 'B+', label: 'B+' },
+    { value: 'B-', label: 'B-' },
+    { value: 'AB+', label: 'AB+' },
+    { value: 'AB-', label: 'AB-' },
+    { value: 'O+', label: 'O+' },
+    { value: 'O-', label: 'O-' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#D4E8E8] via-[#A2BFC6] to-[#798E93]">
@@ -67,80 +78,107 @@ const HospitalDashboard = () => {
       <Navbar user={user} onLogout={logout} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          {[
-            { label: 'Available Donors', value: '248', icon: Users, color: 'red-600' },
-            { label: 'Active Matches', value: '12', icon: Activity, color: '[#556B73]' },
-            { label: 'Pending Requests', value: '5', icon: Filter, color: '[#798E93]' },
-            { label: 'Success Rate', value: '94%', icon: Heart, color: 'red-600' }
-          ].map((stat, index) => (
-            <Card key={index}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[#798E93] text-sm">{stat.label}</p>
-                  <p className="text-3xl font-bold text-[#2C3E44] mt-1">{stat.value}</p>
-                </div>
-                <stat.icon className={`w-12 h-12 text-${stat.color}`} />
+        <h1 className="text-4xl font-bold text-[#2C3E44] mb-8 text-center">Donor Log</h1>
+
+        {/* Search and Filter Section */}
+        <Card className="mb-8">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="md:col-span-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#798E93] w-5 h-5" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by name..."
+                  className="w-full bg-white/50 border border-[#798E93]/30 rounded-lg pl-10 pr-4 py-3 text-[#2C3E44] placeholder-[#798E93] focus:outline-none focus:border-red-600"
+                />
               </div>
-            </Card>
+            </div>
+            <Select
+              label="Filter by Organ"
+              value={filterOrgan}
+              onChange={(e) => setFilterOrgan(e.target.value)}
+              options={organOptions}
+            />
+            <Select
+              label="Filter by Blood Type"
+              value={filterBlood}
+              onChange={(e) => setFilterBlood(e.target.value)}
+              options={bloodTypeOptions}
+            />
+          </div>
+        </Card>
+
+        {/* Donor Cards Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredDonors.map(donor => (
+            <DonorLogCard
+              key={donor.id}
+              donor={donor}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
 
-        <SearchFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          filters={filterConfig}
-          onFilterChange={handleFilterChange}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-        />
-
-        <Card className="mt-8 p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-white/40 border-b border-[#798E93]/30">
-                <tr>
-                  {['Donor', 'Blood Type', 'Organ', 'Location', 'Match Score', 'Status', 'Actions'].map(header => (
-                    <th key={header} className="px-6 py-4 text-left text-[#2C3E44] font-semibold">{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDonors.map(donor => (
-                  <DonorRow key={donor.id} donor={donor} onView={setSelectedDonor} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        {filteredDonors.length === 0 && (
+          <Card className="text-center py-12">
+            <p className="text-[#556B73] text-lg">No donors found matching your criteria.</p>
+          </Card>
+        )}
       </div>
 
-      {selectedDonor && (
-        <Modal isOpen={true} onClose={() => setSelectedDonor(null)} title="Donor Profile" size="md">
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            {[
-              { label: 'Name', value: selectedDonor.name },
-              { label: 'Blood Type', value: selectedDonor.bloodType },
-              { label: 'Organ', value: selectedDonor.organ },
-              { label: 'Location', value: selectedDonor.location },
-              { label: 'Match Score', value: `${selectedDonor.matchScore}%`, special: 'red' },
-              { label: 'Status', value: selectedDonor.status, special: 'green' }
-            ].map((field, index) => (
-              <div key={index}>
-                <label className="block text-[#556B73] mb-2 font-medium">{field.label}</label>
-                <div className={`bg-white/50 border rounded-lg px-4 py-3 ${
-                  field.special === 'red' ? 'text-red-600 font-bold border-[#798E93]/30' :
-                  field.special === 'green' ? 'bg-green-600/20 border-green-600/50 text-green-700 font-semibold' :
-                  'text-[#2C3E44] border-[#798E93]/30'
-                }`}>
-                  {field.value}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="flex space-x-4">
-            <Button variant="primary" className="flex-1">Request Match</Button>
-            <Button variant="secondary" className="flex-1">Contact Donor</Button>
+      {/* Edit Modal */}
+      {editingDonor && (
+        <Modal isOpen={true} onClose={() => setEditingDonor(null)} title="Edit Donor" size="md">
+          <div className="space-y-4">
+            <Input
+              label="Name"
+              value={editFormData.name}
+              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+            />
+            <Input
+              label="Address"
+              value={editFormData.address}
+              onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+            />
+            <Select
+              label="Organ"
+              value={editFormData.organ}
+              onChange={(e) => setEditFormData({ ...editFormData, organ: e.target.value })}
+              options={organOptions.filter(opt => opt.value !== 'all')}
+            />
+            <Input
+              label="Age"
+              type="number"
+              value={editFormData.age}
+              onChange={(e) => setEditFormData({ ...editFormData, age: e.target.value })}
+            />
+            <Input
+              label="Hospital"
+              value={editFormData.hospital}
+              onChange={(e) => setEditFormData({ ...editFormData, hospital: e.target.value })}
+            />
+            <Select
+              label="Blood Type"
+              value={editFormData.bloodType}
+              onChange={(e) => setEditFormData({ ...editFormData, bloodType: e.target.value })}
+              options={bloodTypeOptions.filter(opt => opt.value !== 'all')}
+            />
+            <Input
+              label="Phone"
+              value={editFormData.phone}
+              onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+            />
+            <div className="flex space-x-4 mt-6">
+              <Button variant="primary" onClick={handleSaveEdit} className="flex-1">
+                Save Changes
+              </Button>
+              <Button variant="secondary" onClick={() => setEditingDonor(null)} className="flex-1">
+                Cancel
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

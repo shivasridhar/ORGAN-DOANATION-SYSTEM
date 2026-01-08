@@ -13,6 +13,9 @@ const Register = ({ onBack }) => {
     email: '',
     password: '',
     phone: '',
+    address: '',
+    age: '',
+    hospital: '',
     bloodType: '',
     organ: ''
   });
@@ -82,6 +85,28 @@ const Register = ({ onBack }) => {
         />
         {formData.role === 'donor' && (
           <>
+            <Input
+              label="Address"
+              placeholder="City, State"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              required
+            />
+            <Input
+              label="Age"
+              type="number"
+              placeholder="18"
+              value={formData.age}
+              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              required
+            />
+            <Input
+              label="Hospital"
+              placeholder="Hospital Name"
+              value={formData.hospital}
+              onChange={(e) => setFormData({ ...formData, hospital: e.target.value })}
+              required
+            />
             <Select
               label="Blood Type"
               value={formData.bloodType}
